@@ -155,13 +155,24 @@ export default {
       this.$refs.map.mapObject.on('geosearch/showlocation', (data) => {
         this.value.latitude = data.location.y;
         this.value.longitude = data.location.x;
-        this.populateSiblingFields(data.location.raw.address_components);
+        this.value.display_name = data.location.raw.display_name;
+        this.populateSiblingFields(data.location.raw);
       })
     },
-
+    
     populateSiblingFields(location) {
-      if (this.field.searchProvider !== 'google' && this.requestsPopulatingSiblingFields) {
-        console.error('Populating sibling address fields is only available with the Google provider.');
+      if (
+        this.field.searchProvider !== 'google' && 
+        this.field.searchProvider !== 'open-street-map' && 
+        this.requestsPopulatingSiblingFields
+      ) {
+        console.error('Populating sibling address fields is only available with this provider.');
+        return;
+      }
+
+      if (this.field.searchProvider == 'open-street-map') {
+        this.populateOSMFields(location);
+
         return;
       }
 
@@ -184,6 +195,21 @@ export default {
         this.populateSiblingField(this.field.country, address.country);
       }
     },
+
+    populateOSMFields(location) {
+      this.populateSiblingField(this.field.address, location.display_name);
+
+      if (this.field.postalCode) {
+        this.populateSiblingField(this.field.postalCode, location.postcode);
+      }
+      if (this.field.city) {
+        this.populateSiblingField(this.field.city, location.city);
+      }
+      if (this.field.country) {
+        this.populateSiblingField(this.field.country, location.country);
+      }
+    },
+    
 
     populateSiblingField(attribute, value) {
       this.$parent.$children.forEach((component) => {
